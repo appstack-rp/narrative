@@ -1,9 +1,18 @@
 <!DOCTYPE html>
 <html>
-<body>
-
-<h1>My First Heading</h1>
-<p>My first paragraph.</p>
-
-</body>
+    <script src='https://d3js.org/d3.v5.min.js'>
+    </script>
+    <body onload='init()'>
+        <script>
+            async function init() {
+                const data = await d3.csv('https://flunky.githib.io/data.csv');
+                d3.select('body')
+                  .selectAll('p')
+                  .data(data)
+                  .enter()
+                  .append('p')
+                  .html(function(d,i) {return 'item ' + d.item + 'is ' +d.number + ',';});
+            }
+        </script>
+    </body>
 </html>
