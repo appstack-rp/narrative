@@ -7,22 +7,23 @@
     <body onload='init()'>
         <h1>GDP</h1>
         <!-- create chart division -->
-        <div id="chart"></div>
+        <div id="chart1"></div>
 
         <script>
             async function init() {
                 // read data from csv file
                 const data = await d3.csv('data/GDP.csv');
                 // set dimensions of the chart area
-                var margin = {top: 10, right: 40, bottom: 30, left: 30};
-                var width = 450 - margin.left - margin.right;
-                var height = 400 - margin.top - margin.bottom;
+                var margin = {top: 10, right: 40, bottom: 30, left: 30},
+                    width = 450 - margin.left - margin.right,
+                    height = 400 - margin.top - margin.bottom;
 
-                var svg = d3.select('#chart')
+                var svg = d3.select('#chart1')
                             .append('svg')
                             .attr('width', width + margin.left + margin.right)
                             .attr('height', height + margin.top + margin.bottom)
-                            .attr('g').attr("transform", "translate("+margin.left+","+margin.top + ")");
+                            .append('g')
+                            .attr("transform", "translate("+margin.left+","+margin.top + ")");
 
                 // X scale and Axis
                 var x = d3.scaleLinear()
