@@ -12,17 +12,17 @@
         <script>
             async function init() {
                 // read data from csv file
-                const data = await d3.csv('data/GDP.csv');
+                //const data = await d3.csv('data/GDP.csv');
                 // set dimensions of the chart area
                 var margin = {top: 10, right: 40, bottom: 30, left: 30},
                     width = 450 - margin.left - margin.right,
                     height = 400 - margin.top - margin.bottom;
 
-                var sVg = d3.select('#chart1')
+                var sVg = d3.select("#chart1")
                             .append('svg')
-                            .attr('width', width + margin.left + margin.right)
-                            .attr('height', height + margin.top + margin.bottom)
-                            .append('g')
+                            .attr("width", width + margin.left + margin.right)
+                            .attr("height", height + margin.top + margin.bottom)
+                            .append("g")
                             .attr("transform", "translate("+margin.left+","+margin.top + ")");
 
                 // X scale and Axis
