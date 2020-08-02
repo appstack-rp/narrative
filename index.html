@@ -13,6 +13,10 @@
             async function init() {
                 // read data from csv file
                 const data = await d3.csv('data/GDP.csv');
+                
+                d3.select("#chart1")
+                  .append("p")
+                  .text("Hello");
                 // set dimensions of the chart area
                 var margin = {top: 10, right: 40, bottom: 30, left: 30},
                     width = 450 - margin.left - margin.right,
