@@ -1,34 +1,35 @@
 <!DOCTYPE html>
 <html>
     <head>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lobster">
         <script src='https://d3js.org/d3.v5.min.js'>
         </script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-annotation/2.5.1/d3-annotation.js" 
+          integrity="sha512-OYIn9Tx6AQ/OfeUow7zLScBXV38CqumwIpue7WoR7RczlHJUVU+GqJmQ2Zmq/NrRsMhCN4EDGM4Wp97iTo34Jw==" crossorigin="anonymous"></script>
+        <style>
+            body {
+              font-family: 'Lobster', serif;
+              font-size: 30px;
+            }
+        </style>
     </head>
-    <body onload='init()'>
-        <h1>GDP</h1>
+    <body onload='init()' style="background-color: powderblue;">
+        <h1>US Historical Stock Markets</h1>
         <!-- create chart division -->
         <div id="chart"></div>
 
         <script>
             async function init() {
-                // read data from csv file
-                // const data = await d3.csv('data/GSPC.csv',
-                //                 function(d){
-                //                     return { date : d3.timeParse("%Y-%m-%d")(d.Date), 
-                //                              adjClosePrice : d.adjClose }
-                                // });
                 console.log("loading data...");
                 const data = await d3.csv('https://datahub.io/core/s-and-p-500/r/data.csv', 
                                         function(data) { return {date : d3.timeParse("%Y-%m-%d")(data.Date), price : data["Real Price"]};});
         
-                d3.select("#chart")
-                  .append("p")
-                  .text("Hello")
                 // set dimensions of the chart area
                 var margin = {top: 10, right: 40, bottom: 30, left: 100};
                 var width = 1050 - margin.left - margin.right;
                 var height = 1000 - margin.top - margin.bottom;
 
+                //append svg component in the chart
                 var mySvg = d3.select("#chart")
                             .append("svg")
                             .attr("width", width + margin.left + margin.right)
@@ -36,24 +37,8 @@
                             .append("g")
                                 .attr("transform", "translate("+margin.left+","+margin.top + ")");
 
-                // // X scale and Axis
-                // var x = d3.scaleLinear()
-                //     .domain([0, 100])         // This is the min and the max of the data: 0 to 100 if percentages
-                //     .range([0, width]);       // This is the corresponding value I want in Pixel
-                // sVg.append('g')
-                //     .attr("transform", "translate(0," + height + ")")
-                //     .call(d3.axisBottom(x));
 
-                // // X scale and Axis
-                // var y = d3.scaleLinear()
-                //     .domain([0, 100])         // This is the min and the max of the data: 0 to 100 if percentages
-                //     .range([height, 0]);       // This is the corresponding value I want in Pixel
-                // sVg.append('g')
-                //     .call(d3.axisLeft(y));
-
-
-
-                // Add X axis --> it is a date format
+                // Add X axis scale with time data
                 var x = d3.scaleTime()
                 .domain(d3.extent(data, function(d) { return d.date; }))
                 .range([ 0, width ]);
@@ -61,14 +46,14 @@
                 .attr("transform", "translate(0," + height + ")")
                 .call(d3.axisBottom(x));
 
-                // Add Y axis
+                // Add Y axis scale linearly
                 var y = d3.scaleLinear()
                 .domain([0, d3.max(data, function(d) { return +d.price; })])
                 .range([ height, 0 ]);
                 mySvg.append("g")
                 .call(d3.axisLeft(y));
 
-                // Add the line
+                // Add line chart
                 mySvg.append("path")
                 .datum(data)
                 .attr("fill", "none")
@@ -79,6 +64,100 @@
                     .y(function(d) { return y(d.price) })
                     )
 
+                // Add annotation
+                var labels = [{
+                    data: { year: "1929", event: "Wall Street Crash of 1929", date: "1929-6-5" },
+                    dy: 37,
+                    dx: -142,
+                    subject: { text: 'C', y: "bottom" },
+                    id: "minimize-badge"
+                }, {
+                    data: {  year: "1937", event: "Recession of 1937–38", date: "1937-9-9" },
+                    dy: -137,
+                    dx: 0,
+                    note: { align: "middle" },
+                    subject: { text: 'A', y: "bottom" },
+                    id: "minimize-badge"
+                }].map(function (l) {
+                    l.note = Object.assign({}, l.note, { title: l.data.event,
+                    label: "Year : " + l.data.year });
+                    return l;
+                });
+
+                //using a separate type of annotation to control the resize functionality
+                var resize = [{
+                    subject: {
+                    y1: 0,
+                    y2: height
+                    },
+                    x: width,
+                    dx: 10,
+                    dy: height / 2,
+                    disable: ["connector"],
+                    note: {
+                    title: "< >",
+                    label: "drag to resize",
+                    lineType: "none"
+                    }
+                }];
+
+                var timeFormat = d3.timeFormat("%Y-%m-%d");
+                const parseTime = d3.timeParse("%Y-%m-%d");
+
+                window.makeAnnotations = d3.annotation().annotations(labels).type(d3.annotationCalloutElbow).accessors({ x: function x(d) {
+                    return x(parseTime(d.date));
+                    },
+                    y: function y(d) {
+                    return y(d.close);
+                    }
+                }).accessorsInverse({
+                    date: function date(d) {
+                    return timeFormat(x.invert(d.x));
+                    },
+                    close: function close(d) {
+                    return y.invert(d.y);
+                    }
+                }).on('subjectover', function (annotation) {
+
+                    //cannot reference this if you are using es6 function syntax
+                    this.append('text').attr('class', 'hover').text(annotation.note.title).attr('text-anchor', 'middle').attr('y', annotation.subject.y && annotation.subject.y == "bottom" ? 50 : -40).attr('x', -15);
+
+                    this.append('text').attr('class', 'hover').text(annotation.note.label).attr('text-anchor', 'middle').attr('y', annotation.subject.y && annotation.subject.y == "bottom" ? 70 : -60).attr('x', -15);
+                }).on('subjectout', function (annotation) {
+                    this.selectAll('text.hover').remove();
+                });
+
+                //Isn't using data for placement so accessors and accessorsInverse
+                //are not necessary
+                window.makeResize = d3.annotation().annotations(resize).type(d3.annotationXYThreshold);
+
+                mySvg.append("g").attr("class", "annotation-test").call(makeAnnotations);
+
+                mySvg.append("g").attr("class", "annotation-resize").call(makeResize);
+
+                mySvg.select(".annotation.xythreshold").call(d3.drag().on("drag", function (d) {
+                    var newWidth = Math.max(0, Math.min(maxWidth, d.x + d3.event.dx));
+                    d.x = newWidth;
+
+                    var threshold = 400;
+                    if (newWidth < threshold && width >= threshold) {
+                    makeAnnotations.type(d3.annotationBadge);
+                    mySvg.select("g.annotation-test").call(makeAnnotations);
+                    } else if (newWidth > threshold && width <= threshold) {
+                    makeAnnotations.type(d3.annotationCalloutElbow);
+                    mySvg.select("g.annotation-test").call(makeAnnotations);
+                    }
+
+                    width = newWidth;
+
+                    x.range([0, width]);
+                    makeAnnotations.updatedAccessors();
+                    makeResize.updatedAccessors();
+
+                    mySvg.select("g.x-axis").call(d3.axisBottom(x));
+
+                    mySvg.select("path.line").attr("d", valueline);
+                }));
 
             }
         </script>
