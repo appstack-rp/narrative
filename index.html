@@ -11,32 +11,198 @@
               font-family: 'Lobster', serif;
               font-size: 30px;
             }
+
+            .button {
+                border: none;
+                color:rgb(141, 190, 210);
+                padding: 15px 32px;
+                text-align: center;
+                text-decoration: none;
+                display: inline-block;
+                font-size: 16px;
+                margin: 4px 2px;
+                cursor: pointer;
+                border-radius: 15px;
+                font-family: Lobster;
+            }
         </style>
     </head>
     <body onload='init()' style="background-color: powderblue;">
-        <h1>US Historical Stock Markets</h1>
+        <h1>US Historical Stock Markets Price (S&P500)</h1>
+        <div>   
+            <button class="button" autofocus onclick="allEvent()">All</button>
+            <button class="button" onclick="dotCom()">Dot-com bubble</button>
+            <button class="button" onclick="financialCrisis()">Financial crisis of 2007–08</button>
+        </div>
+        
         <!-- create chart division -->
         <div id="chart"></div>
 
         <script>
+            var data;
+            var goldPrice;
+            var bondYield;
+            // var stockReturns;
+            // var goldReturns;
+
             async function init() {
-                console.log("loading data...");
-                const data = await d3.csv('https://datahub.io/core/s-and-p-500/r/data.csv', 
-                                        function(data) { return {date : d3.timeParse("%Y-%m-%d")(data.Date), price : data["Real Price"]};});
-        
+                // read stock prices
+                data = await d3.csv('https://datahub.io/core/s-and-p-500/r/data.csv', 
+                                        function(data) { return {date : d3.timeParse("%Y-%m-%d")(data.Date), returns : data["Real Price"]};});
+                
+                // calculate stock returns
+                // stockReturns = calculateReturns(data);
+                // console.log(stockReturns);
+                // read gold price
+                goldPrice = await d3.csv('https://datahub.io/core/gold-prices/r/monthly.csv', 
+                                        function(data) { return {date : d3.timeParse("%Y-%m")(data.Date), returns : data["Price"]};});
+                // calculate gold returns
+                // goldReturns = calculateReturns(goldPrice);
+                // read bond returns
+                // bondYield = await d3.csv('https://datahub.io/core/bond-yields-us-10y/r/monthly.csv',
+                //                         function(data) { return {date : d3.timeParse("%Y-%m")(data.Date), returns : data["Rate"]};});
+                            
+                allChart();
+
+                // Add annotation
+                // var labels = [{
+                //     data: { year: "1929", event: "Wall Street Crash of 1929", date: "1929-6-1", price: 382.06 },
+                //     dy: 37,
+                //     dx: -142,
+                //     subject: { text: 'C', y: "bottom" },
+                //     id: "minimize-badge"
+                // } 
+                // // {
+                // //     data: {  year: "1937", event: "Recession of 1937–38", date: "1937-9-1", price: 245.9 },
+                // //     dy: -137,
+                // //     dx: 0,
+                // //     note: { align: "middle" },
+                // //     subject: { text: 'A', y: "bottom" },
+                // //     id: "minimize-badge"}
+                // ].map(function (l) {
+                //     l.note = Object.assign({}, l.note, { title: l.data.event,
+                //     label: "Year : " + l.data.year });
+                //     return l;
+                // });
+
+                // //using a separate type of annotation to control the resize functionality
+                // var resize = [{
+                //     subject: {
+                //     y1: 0,
+                //     y2: height
+                //     },
+                //     x: width,
+                //     dx: 10,
+                //     dy: height / 2,
+                //     disable: ["connector"],
+                //     note: {
+                //     title: "< >",
+                //     label: "drag to resize",
+                //     lineType: "none"
+                //     }
+                // }];
+
+                // var timeFormat = d3.timeFormat("%Y-%m-%d");
+                // const parseTime = d3.timeParse("%Y-%m-%d");
+
+                // window.makeAnnotations = d3.annotation().annotations(labels).type(d3.annotationCalloutElbow).accessors({ x: function x(d) {
+                //     return x(parseTime(d.date));
+                //     },
+                //     y: function y(d) {
+                //     return y(d.price);
+                //     }
+                // }).accessorsInverse({
+                //     date: function date(d) {
+                //     return timeFormat(x.invert(d.x));
+                //     },
+                //     price: function price(d) {
+                //     return y.invert(d.y);
+                //     }
+                // }).on('subjectover', function (annotation) {
+
+                //     //cannot reference this if you are using es6 function syntax
+                //     this.append('text').attr('class', 'hover').text(annotation.note.title).attr('text-anchor', 'middle').attr('y', annotation.subject.y && annotation.subject.y == "bottom" ? 50 : -40).attr('x', -15);
+
+                //     this.append('text').attr('class', 'hover').text(annotation.note.label).attr('text-anchor', 'middle').attr('y', annotation.subject.y && annotation.subject.y == "bottom" ? 70 : -60).attr('x', -15);
+                // }).on('subjectout', function (annotation) {
+                //     this.selectAll('text.hover').remove();
+                // });
+
+                // //Isn't using data for placement so accessors and accessorsInverse
+                // //are not necessary
+                // window.makeResize = d3.annotation().annotations(resize).type(d3.annotationXYThreshold);
+
+                // mySvg.append("g").attr("class", "annotation-test").call(makeAnnotations);
+
+                // mySvg.append("g").attr("class", "annotation-resize").call(makeResize);
+
+                // mySvg.select(".annotation.xythreshold").call(d3.drag().on("drag", function (d) {
+                //     var newWidth = Math.max(0, Math.min(maxWidth, d.x + d3.event.dx));
+                //     d.x = newWidth;
+
+                //     var threshold = 400;
+                //     if (newWidth < threshold && width >= threshold) {
+                //     makeAnnotations.type(d3.annotationBadge);
+                //     mySvg.select("g.annotation-test").call(makeAnnotations);
+                //     } else if (newWidth > threshold && width <= threshold) {
+                //     makeAnnotations.type(d3.annotationCalloutElbow);
+                //     mySvg.select("g.annotation-test").call(makeAnnotations);
+                //     }
+
+                //     width = newWidth;
+
+                //     x.range([0, width]);
+                //     makeAnnotations.updatedAccessors();
+                //     makeResize.updatedAccessors();
+
+                //     mySvg.select("g.x-axis").call(d3.axisBottom(x));
+
+                //     mySvg.select("path.line").attr("d", valueline);
+                // }));
+
+            }
+
+            function calculateReturns(arr) {
+                var returns = arr;
+
+                for(var i = arr.length-1; i > 0; i--) {
+                    returns[i].returns = (arr[i].returns / arr[i-1].returns) - 1;
+                }
+                returns[0].returns = 0;
+                return returns;
+            }
+
+            function clear() {
+                d3.select("#chart").html("");
+            }
+
+            function addDescription(text) {
+                d3.select("#chart")
+                    .append("p")
+                    .text(text)
+                    .style("font-size","15px")
+            }
+
+            function allEvent() {
+                clear();
+                allChart();
+            }
+
+            function allChart() {
+                console.log("I'm here");
                 // set dimensions of the chart area
-                var margin = {top: 10, right: 40, bottom: 30, left: 100};
+                var margin = {top: 50, right: 40, bottom: 30, left: 100};
                 var width = 1050 - margin.left - margin.right;
                 var height = 1000 - margin.top - margin.bottom;
 
                 //append svg component in the chart
                 var mySvg = d3.select("#chart")
                             .append("svg")
+                            .attr("id", "mySvg")
                             .attr("width", width + margin.left + margin.right)
                             .attr("height", height + margin.top + margin.bottom)
                             .append("g")
                                 .attr("transform", "translate("+margin.left+","+margin.top + ")");
-
 
                 // Add X axis scale with time data
                 var x = d3.scaleTime()
@@ -48,7 +214,7 @@
 
                 // Add Y axis scale linearly
                 var y = d3.scaleLinear()
-                .domain([0, d3.max(data, function(d) { return +d.price; })])
+                .domain([0, d3.max(data, function(d) { return +d.returns; })])
                 .range([ height, 0 ]);
                 mySvg.append("g")
                 .call(d3.axisLeft(y));
@@ -61,111 +227,201 @@
                 .attr("stroke-width", 1.5)
                 .attr("d", d3.line()
                     .x(function(d) { return x(d.date) })
-                    .y(function(d) { return y(d.price) })
+                    .y(function(d) { return y(d.returns) })
                     )
 
-                // Add annotation
-                var labels = [{
-                    data: { year: "1929", event: "Wall Street Crash of 1929", date: "1929-6-5" },
-                    dy: 37,
-                    dx: -142,
-                    subject: { text: 'C', y: "bottom" },
-                    id: "minimize-badge"
-                }, {
-                    data: {  year: "1937", event: "Recession of 1937–38", date: "1937-9-9" },
-                    dy: -137,
-                    dx: 0,
-                    note: { align: "middle" },
-                    subject: { text: 'A', y: "bottom" },
-                    id: "minimize-badge"
-                }].map(function (l) {
-                    l.note = Object.assign({}, l.note, { title: l.data.event,
-                    label: "Year : " + l.data.year });
-                    return l;
-                });
-
-                //using a separate type of annotation to control the resize functionality
-                var resize = [{
-                    subject: {
-                    y1: 0,
-                    y2: height
+                // Add Annotations
+                var formatTime = d3.timeFormat("%Y-%m-%d");
+                const annotations = [
+                    {
+                        note: {
+                            label: "Test",
+                            title: "Annotation Title"
+                        },
+                        x: formatTime("1929-06-01"),
+                        y: 382.06,
+                        dy: 400,
+                        dx: 200
                     },
-                    x: width,
-                    dx: 10,
-                    dy: height / 2,
-                    disable: ["connector"],
-                    note: {
-                    title: "< >",
-                    label: "drag to resize",
-                    lineType: "none"
+                    {
+                        note: {
+                            label: "Test2",
+                            title: "Annotation Title2"
+                        },
+                        x: formatTime("1973-09-01"),
+                        y: 1250,
+                        dy: 100,
+                        dx: 500
                     }
-                }];
+                ]
 
-                var timeFormat = d3.timeFormat("%Y-%m-%d");
-                const parseTime = d3.timeParse("%Y-%m-%d");
+                const makeAnnotations = d3.annotation()
+                                          .annotations(annotations);
 
-                window.makeAnnotations = d3.annotation().annotations(labels).type(d3.annotationCalloutElbow).accessors({ x: function x(d) {
-                    return x(parseTime(d.date));
-                    },
-                    y: function y(d) {
-                    return y(d.close);
-                    }
-                }).accessorsInverse({
-                    date: function date(d) {
-                    return timeFormat(x.invert(d.x));
-                    },
-                    close: function close(d) {
-                    return y.invert(d.y);
-                    }
-                }).on('subjectover', function (annotation) {
+                mySvg.append("g")
+                  .call(makeAnnotations);
+            }
 
-                    //cannot reference this if you are using es6 function syntax
-                    this.append('text').attr('class', 'hover').text(annotation.note.title).attr('text-anchor', 'middle').attr('y', annotation.subject.y && annotation.subject.y == "bottom" ? 50 : -40).attr('x', -15);
+            function plotTwoChartsDuringPeriod(start, end) {
+                var cutoffStartDate = new Date(start);
+                var cutoffEndDate = new Date(end);
+                cutoffStartDate.setDate(cutoffStartDate.getDate());
+                cutoffEndDate.setDate(cutoffEndDate.getDate());
+                
+                tempData = data.filter(function(d) {
+                return d.date > cutoffStartDate && d.date < cutoffEndDate;
+                })
 
-                    this.append('text').attr('class', 'hover').text(annotation.note.label).attr('text-anchor', 'middle').attr('y', annotation.subject.y && annotation.subject.y == "bottom" ? 70 : -60).attr('x', -15);
-                }).on('subjectout', function (annotation) {
-                    this.selectAll('text.hover').remove();
-                });
+                tempGoldPrice = goldPrice.filter(function(d) {
+                return d.date > cutoffStartDate && d.date < cutoffEndDate;
+                })
 
-                //Isn't using data for placement so accessors and accessorsInverse
-                //are not necessary
-                window.makeResize = d3.annotation().annotations(resize).type(d3.annotationXYThreshold);
+                console.log("add chart")
 
-                mySvg.append("g").attr("class", "annotation-test").call(makeAnnotations);
+                // set dimensions of the chart area
+                var margin = {top: 50, right: 40, bottom: 30, left: 100};
+                var width = 1050 - margin.left - margin.right;
+                var height = 1000 - margin.top - margin.bottom;
 
-                mySvg.append("g").attr("class", "annotation-resize").call(makeResize);
+                //append svg component in the chart
+                var mySvg = d3.select("#chart")
+                            .append("svg")
+                            .attr("id", "mySvg")
+                            .attr("width", width + margin.left + margin.right)
+                            .attr("height", height + margin.top + margin.bottom)
+                            .append("g")
+                                .attr("transform", "translate("+margin.left+","+margin.top + ")");
+                
+                // Add X axis scale with time data
+                var x = d3.scaleTime()
+                .domain(d3.extent(tempData, function(d) { return d.date; }))
+                .range([ 0, width ]);
+                mySvg.append("g")
+                .attr("transform", "translate(0," + height + ")")
+                .call(d3.axisBottom(x));
 
-                mySvg.select(".annotation.xythreshold").call(d3.drag().on("drag", function (d) {
-                    var newWidth = Math.max(0, Math.min(maxWidth, d.x + d3.event.dx));
-                    d.x = newWidth;
+                // Add label for the x axis
+                mySvg.append("text")             
+                .attr("transform",
+                        "translate(" + (width/2) + " ," + 
+                                    (height + margin.bottom) + ")")
+                .style("text-anchor", "middle")
+                .style("font-size","15px")
+                .text("Date");
 
-                    var threshold = 400;
-                    if (newWidth < threshold && width >= threshold) {
-                    makeAnnotations.type(d3.annotationBadge);
-                    mySvg.select("g.annotation-test").call(makeAnnotations);
-                    } else if (newWidth > threshold && width <= threshold) {
-                    makeAnnotations.type(d3.annotationCalloutElbow);
-                    mySvg.select("g.annotation-test").call(makeAnnotations);
-                    }
+                // Add Y axis scale linearly
+                var y = d3.scaleLinear()
+                .domain([0, d3.max(tempData, function(d) { return +d.returns; })])
+                .range([ height, 0 ]);
+                mySvg.append("g")
+                .call(d3.axisLeft(y));
 
-                    width = newWidth;
+                // Add label for the x axis
+                mySvg.append("text")             
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - 75)
+                .attr("x",0 - (height / 2))
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .style("font-size","15px")
+                .text("Price");
 
-                    x.range([0, width]);
-                    makeAnnotations.updatedAccessors();
-                    makeResize.updatedAccessors();
+                // Add line chart
+                mySvg.append("path")
+                .datum(tempData)
+                .attr("fill", "none")
+                .attr("stroke", "steelblue")
+                .attr("stroke-width", 1.5)
+                .attr("d", d3.line()
+                    .x(function(d) { return x(d.date) })
+                    .y(function(d) { return y(d.returns) })
+                    );
 
-                    mySvg.select("g.x-axis").call(d3.axisBottom(x));
+                // Add line chart
+                mySvg.append("path")
+                .datum(tempGoldPrice)
+                .attr("fill", "none")
+                .attr("stroke", "red")
+                .attr("stroke-width", 1.5)
+                .attr("d", d3.line()
+                    .x(function(d) { return x(d.date) })
+                    .y(function(d) { return y(d.returns) })
+                    )
 
-                    mySvg.select("path.line").attr("d", valueline);
-                }));
+                // Add chart legend
+                mySvg.append("circle").attr("cx",800).attr("cy",150).attr("r", 6).style("fill", "steelblue");
+                mySvg.append("circle").attr("cx",800).attr("cy",180).attr("r", 6).style("fill", "red");
+                mySvg.append("text").attr("x", 820).attr("y", 150).text("S&P500 Price").style("font-size", "15px").attr("alignment-baseline","middle");
+                mySvg.append("text").attr("x", 820).attr("y", 180).text("Glod Price").style("font-size", "15px").attr("alignment-baseline","middle");
+            }
+
+            function wallStreetCrash() {
+                clear();
+                addDescription("The Wall Street Crash of 1929, also known as the Great Crash, was a major American stock market crash that occurred in the fall of 1929. It started in September and ended late in October, when share prices on the New York Stock Exchange collapsed.");
+                addDescription("It was the most devastating stock market crash in the history of the United States, when taking into consideration the full extent and duration of its aftereffects. The crash, which followed the London Stock Exchange's crash of September, signaled the beginning of the Great Depression.");
+                
+                console.log("add chart")
+
+                // set dimensions of the chart area
+                var margin = {top: 50, right: 40, bottom: 30, left: 100};
+                var width = 1050 - margin.left - margin.right;
+                var height = 1000 - margin.top - margin.bottom;
+
+                //append svg component in the chart
+                var mySvg = d3.select("#chart")
+                            .append("svg")
+                            .attr("id", "mySvg")
+                            .attr("width", width + margin.left + margin.right)
+                            .attr("height", height + margin.top + margin.bottom)
+                            .append("g")
+                                .attr("transform", "translate("+margin.left+","+margin.top + ")");
+                
+                // Add X axis scale with time data
+                var x = d3.scaleTime()
+                .domain(d3.extent(data, function(d) { return d.date; }))
+                .range([ 0, width ]);
+                mySvg.append("g")
+                .attr("transform", "translate(0," + height + ")")
+                .call(d3.axisBottom(x));
+
+                // Add Y axis scale linearly
+                var y = d3.scaleLinear()
+                .domain([0, d3.max(data, function(d) { return +d.returns; })])
+                .range([ height, 0 ]);
+                mySvg.append("g")
+                .call(d3.axisLeft(y));
+
+                // Add line chart
+                mySvg.append("path")
+                .datum(data)
+                .attr("fill", "none")
+                .attr("stroke", "steelblue")
+                .attr("stroke-width", 1.5)
+                .attr("d", d3.line()
+                    .x(function(d) { return x(d.date) })
+                    .y(function(d) { return y(d.returns) })
+                    )
 
             }
-        </script>
 
+            function recession() {
+                clear();
+                addDescription("The recession of 1937–1938 was an economic downturn that occurred during the Great Depression in the United States.");
+                addDescription("By the spring of 1937, production, profits, and wages had regained their early 1929 levels. Unemployment remained high, but it was substantially lower than the 25% rate seen in 1933. The American economy took a sharp downturn in mid-1937, lasting for 13 months through most of 1938. Industrial production declined almost 30 percent, and production of durable goods fell even faster.");
+            }
 
-        <script>
-            function clear() {
-                d3.select('#chart').html="";
+            function dotCom() {
+                clear();
+                addDescription("The dot-com bubble (also known as the dot-com boom, the tech bubble, and the Internet bubble) was a stock market bubble caused by excessive speculation in Internet-related companies in the late 1990s, a period of massive growth in the use and adoption of the Internet.");
+                addDescription("Between 1995 and its peak in March 2000, the Nasdaq Composite stock market index rose 400%, only to fall 78% from its peak by October 2002, giving up all its gains during the bubble. During the crash, many online shopping companies, such as Pets.com, Webvan, and Boo.com, as well as several communication companies, such as Worldcom, NorthPoint Communications, and Global Crossing, failed and shut down.Some companies, such as Cisco, whose stock declined by 86%, and Qualcomm, lost a large portion of their market capitalization but survived, and others, such as eBay and Amazon.com, also lost value but recovered quickly.");
+
+                plotTwoChartsDuringPeriod("1988-01-01", "2006-01-01");
+            }
+
+            function financialCrisis() {
+                clear();
+                addDescription("The financial crisis of 2007–2008, also known as the global financial crisis (GFC), was a severe worldwide financial crisis. Excessive risk-taking by banks combined with a downturn in the subprime lending market in the United States culminated with the bankruptcy of Lehman Brothers on September 15, 2008 and an international banking crisis. The crisis sparked the Great Recession, a global recession, which, until the coronavirus recession, was the most severe recession since the Great Depression. It was also followed by the European debt crisis, which began with a deficit in Greece in late 2009, and the 2008–2011 Icelandic financial crisis.");
+                plotTwoChartsDuringPeriod("2007-01-01", "2015-01-01");
             }
         </script>
     </body>
