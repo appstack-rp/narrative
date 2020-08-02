@@ -64,102 +64,6 @@
                             
                 allChart();
 
-                // Add annotation
-                // var labels = [{
-                //     data: { year: "1929", event: "Wall Street Crash of 1929", date: "1929-6-1", price: 382.06 },
-                //     dy: 37,
-                //     dx: -142,
-                //     subject: { text: 'C', y: "bottom" },
-                //     id: "minimize-badge"
-                // } 
-                // // {
-                // //     data: {  year: "1937", event: "Recession of 1937–38", date: "1937-9-1", price: 245.9 },
-                // //     dy: -137,
-                // //     dx: 0,
-                // //     note: { align: "middle" },
-                // //     subject: { text: 'A', y: "bottom" },
-                // //     id: "minimize-badge"}
-                // ].map(function (l) {
-                //     l.note = Object.assign({}, l.note, { title: l.data.event,
-                //     label: "Year : " + l.data.year });
-                //     return l;
-                // });
-
-                // //using a separate type of annotation to control the resize functionality
-                // var resize = [{
-                //     subject: {
-                //     y1: 0,
-                //     y2: height
-                //     },
-                //     x: width,
-                //     dx: 10,
-                //     dy: height / 2,
-                //     disable: ["connector"],
-                //     note: {
-                //     title: "< >",
-                //     label: "drag to resize",
-                //     lineType: "none"
-                //     }
-                // }];
-
-                // var timeFormat = d3.timeFormat("%Y-%m-%d");
-                // const parseTime = d3.timeParse("%Y-%m-%d");
-
-                // window.makeAnnotations = d3.annotation().annotations(labels).type(d3.annotationCalloutElbow).accessors({ x: function x(d) {
-                //     return x(parseTime(d.date));
-                //     },
-                //     y: function y(d) {
-                //     return y(d.price);
-                //     }
-                // }).accessorsInverse({
-                //     date: function date(d) {
-                //     return timeFormat(x.invert(d.x));
-                //     },
-                //     price: function price(d) {
-                //     return y.invert(d.y);
-                //     }
-                // }).on('subjectover', function (annotation) {
-
-                //     //cannot reference this if you are using es6 function syntax
-                //     this.append('text').attr('class', 'hover').text(annotation.note.title).attr('text-anchor', 'middle').attr('y', annotation.subject.y && annotation.subject.y == "bottom" ? 50 : -40).attr('x', -15);
-
-                //     this.append('text').attr('class', 'hover').text(annotation.note.label).attr('text-anchor', 'middle').attr('y', annotation.subject.y && annotation.subject.y == "bottom" ? 70 : -60).attr('x', -15);
-                // }).on('subjectout', function (annotation) {
-                //     this.selectAll('text.hover').remove();
-                // });
-
-                // //Isn't using data for placement so accessors and accessorsInverse
-                // //are not necessary
-                // window.makeResize = d3.annotation().annotations(resize).type(d3.annotationXYThreshold);
-
-                // mySvg.append("g").attr("class", "annotation-test").call(makeAnnotations);
-
-                // mySvg.append("g").attr("class", "annotation-resize").call(makeResize);
-
-                // mySvg.select(".annotation.xythreshold").call(d3.drag().on("drag", function (d) {
-                //     var newWidth = Math.max(0, Math.min(maxWidth, d.x + d3.event.dx));
-                //     d.x = newWidth;
-
-                //     var threshold = 400;
-                //     if (newWidth < threshold && width >= threshold) {
-                //     makeAnnotations.type(d3.annotationBadge);
-                //     mySvg.select("g.annotation-test").call(makeAnnotations);
-                //     } else if (newWidth > threshold && width <= threshold) {
-                //     makeAnnotations.type(d3.annotationCalloutElbow);
-                //     mySvg.select("g.annotation-test").call(makeAnnotations);
-                //     }
-
-                //     width = newWidth;
-
-                //     x.range([0, width]);
-                //     makeAnnotations.updatedAccessors();
-                //     makeResize.updatedAccessors();
-
-                //     mySvg.select("g.x-axis").call(d3.axisBottom(x));
-
-                //     mySvg.select("path.line").attr("d", valueline);
-                // }));
-
             }
 
             function calculateReturns(arr) {
@@ -189,7 +93,6 @@
             }
 
             function allChart() {
-                console.log("I'm here");
                 // set dimensions of the chart area
                 var margin = {top: 50, right: 40, bottom: 30, left: 100};
                 var width = 1050 - margin.left - margin.right;
@@ -203,6 +106,26 @@
                             .attr("height", height + margin.top + margin.bottom)
                             .append("g")
                                 .attr("transform", "translate("+margin.left+","+margin.top + ")");
+
+                // Add Tooltip
+                var bisect = d3.bisector(function(d) { return d.date; }).left;
+                var formatYear = d3.timeFormat("%m/%Y");
+                // Create the circle that travels along the curve of chart
+                var focus = mySvg.append('g')
+                    .append('circle')
+                    .style("fill", "none")
+                    .attr("stroke", "black")
+                    .attr('r', 8)
+                    .style("opacity", 0)
+                    .style("font-size","15px")
+
+                // Create the text that travels along the curve of chart
+                var focusText = mySvg.append('g')
+                    .append('text')
+                    .style("opacity", 0)
+                    .attr("text-anchor", "left")
+                    .attr("alignment-baseline", "middle")
+                    .style("font-size","15px")
 
                 // Add X axis scale with time data
                 var x = d3.scaleTime()
@@ -230,28 +153,68 @@
                     .y(function(d) { return y(d.returns) })
                     )
 
+                mySvg.append('rect')
+                .style("fill", "none")
+                .style("pointer-events", "all")
+                .attr('width', width)
+                .attr('height', height)
+                .on('mouseover', function (d) {
+                    focus.style("opacity", 1)
+                    focusText.style("opacity",1)})
+                .on("mousemove", function() {
+                    // recover coordinate we need
+                    var x0 = x.invert(d3.mouse(this)[0]);
+                    var i = bisect(data, x0, 1);
+                    selectedData = data[i]
+                    focus.attr("cx", x(selectedData.date))
+                        .attr("cy", y(selectedData.returns))
+                    focusText.html("x:" + formatYear(selectedData.date) + "  -  " + "y:" + selectedData.returns)
+                        .attr("x", x(selectedData.date)+15)
+                        .attr("y", y(selectedData.returns))})
+                .on('mouseout', function() {
+                    focus.style("opacity", 0)
+                    focusText.style("opacity", 0)});
+
                 // Add Annotations
                 var formatTime = d3.timeFormat("%Y-%m-%d");
+                var selectedDate1 = new Date("2001-12-02");
+                var selectedDate2 = new Date("2008-09-02");
+
+                console.log(selectedDate1);
+                console.log(selectedDate2);
                 const annotations = [
                     {
                         note: {
-                            label: "Test",
-                            title: "Annotation Title"
+                            label: "1998 - 2002",
+                            title: "Dot-com Bubble",
+                            fontSize: 10
                         },
-                        x: formatTime("1929-06-01"),
-                        y: 382.06,
-                        dy: 400,
-                        dx: 200
+                        type: d3.annotationCalloutCircle,
+                        subject: {
+                            radius: 20,
+                            radiusPadding: 20
+                        },
+                        color: "red",
+                        x: x(selectedDate1),
+                        y: y(1618.81),
+                        dy: -50,
+                        dx: -100
                     },
                     {
                         note: {
-                            label: "Test2",
-                            title: "Annotation Title2"
+                            label: "2007-2008",
+                            title: "Financial Crisis"
                         },
-                        x: formatTime("1973-09-01"),
-                        y: 1250,
-                        dy: 100,
-                        dx: 500
+                        type: d3.annotationCalloutCircle,
+                        subject: {
+                            radius: 20,
+                            radiusPadding: 20
+                        },
+                        color: "red",
+                        x: x(selectedDate2),
+                        y: y(1350),
+                        dy: 10,
+                        dx: -100
                     }
                 ]
 
@@ -260,6 +223,27 @@
 
                 mySvg.append("g")
                   .call(makeAnnotations);
+
+                // Add label for the x axis
+                mySvg.append("text")             
+                .attr("transform",
+                        "translate(" + (width/2) + " ," + 
+                                    (height + margin.bottom) + ")")
+                .style("text-anchor", "middle")
+                .style("font-size","15px")
+                .text("Date");
+
+                // Add label for the y axis
+                mySvg.append("text")             
+                .attr("transform", "rotate(-90)")
+                .attr("y", 0 - 75)
+                .attr("x",0 - (height / 2))
+                .attr("dy", "1em")
+                .style("text-anchor", "middle")
+                .style("font-size","15px")
+                .text("Price");
+
+
             }
 
             function plotTwoChartsDuringPeriod(start, end) {
@@ -316,7 +300,7 @@
                 mySvg.append("g")
                 .call(d3.axisLeft(y));
 
-                // Add label for the x axis
+                // Add label for the y axis
                 mySvg.append("text")             
                 .attr("transform", "rotate(-90)")
                 .attr("y", 0 - 75)
@@ -412,15 +396,17 @@
 
             function dotCom() {
                 clear();
-                addDescription("The dot-com bubble (also known as the dot-com boom, the tech bubble, and the Internet bubble) was a stock market bubble caused by excessive speculation in Internet-related companies in the late 1990s, a period of massive growth in the use and adoption of the Internet.");
-                addDescription("Between 1995 and its peak in March 2000, the Nasdaq Composite stock market index rose 400%, only to fall 78% from its peak by October 2002, giving up all its gains during the bubble. During the crash, many online shopping companies, such as Pets.com, Webvan, and Boo.com, as well as several communication companies, such as Worldcom, NorthPoint Communications, and Global Crossing, failed and shut down.Some companies, such as Cisco, whose stock declined by 86%, and Qualcomm, lost a large portion of their market capitalization but survived, and others, such as eBay and Amazon.com, also lost value but recovered quickly.");
+                addDescription("The dot-com bubble, so-called dot-com boom, refers to the stock market bubble caused by the excessive stock price of the technology and internet-based companies which happened in the late 1990s. During this period, there was a big growth in the adoption of the Internet and tecnology. From the chart below, you can see the stock market skyrocketed during 1995 - 2000, before it dramatically dropped at the end of 2000.");
+                addDescription("During the market upturn, the Nasdaq Composite stock market index increased by more than 400%, and then fell by October 2002. During this market crash, many companies shut down their operations, some lost more than half of their market shares but still survived, while the big names also experience the lost but recovered quickly.");
+                addDescription("The chart below also shows the movement of the stock market and gold since gold is considered safe haven during the market downturns. You can see that they usually move in the opposite direction.");
 
                 plotTwoChartsDuringPeriod("1988-01-01", "2006-01-01");
             }
 
             function financialCrisis() {
                 clear();
-                addDescription("The financial crisis of 2007–2008, also known as the global financial crisis (GFC), was a severe worldwide financial crisis. Excessive risk-taking by banks combined with a downturn in the subprime lending market in the United States culminated with the bankruptcy of Lehman Brothers on September 15, 2008 and an international banking crisis. The crisis sparked the Great Recession, a global recession, which, until the coronavirus recession, was the most severe recession since the Great Depression. It was also followed by the European debt crisis, which began with a deficit in Greece in late 2009, and the 2008–2011 Icelandic financial crisis.");
+                addDescription("The financial crisis of 2007–2008, also known as the global financial crisis (GFC), was the most recent and severe worldwide financial crisis. This crisis was cased by excessive risk-taking by the financial institutions on the structural products e.g. MBS, CDS, combined with the failure in the subprime lending market in the United States. This crash was also worsen by the bankruptcy of Lehman Brothers on September 15, 2008 and an international banking crisis. This crisis initiated the Global recession which is considered the worst recession before the Coronavirus.");
+                addDescription("The chart below also shows the movement of the stock market and gold since gold is considered safe haven during the market downturns. You can see that they usually move in the opposite direction.");
                 plotTwoChartsDuringPeriod("2007-01-01", "2015-01-01");
             }
         </script>
